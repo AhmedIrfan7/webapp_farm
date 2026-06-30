@@ -77,9 +77,9 @@ export function Footer() {
                 { label: 'Create Account', href: '/auth/register' },
                 { label: 'My Orders', href: '/portal/orders' },
                 { label: 'Silage Portal', href: '/silage-portal' },
-                { label: 'Farm Registration', href: '/auth/register' },
+                { label: 'Farm Registration', href: '/auth/register?role=farm' },
               ].map((link) => (
-                <li key={link.href}>
+                <li key={link.label}>
                   <Link href={link.href} className="text-sm text-white/70 hover:text-white transition-colors">
                     {link.label}
                   </Link>
