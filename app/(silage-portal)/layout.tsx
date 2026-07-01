@@ -1,21 +1,27 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { SITE_NAME } from '@/lib/constants'
 
 export default async function SilagePortalLayout({ children }: { children: React.ReactNode }) {
+  // Step 1: verify identity via anon client (validates JWT properly)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) redirect('/auth/login?redirect=/silage-portal')
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  // Step 2: read profile via service client (bypasses RLS — no cookie interference)
+  const db = createServiceClient()
+  const { data: profile } = await db
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
   if (profile?.role === 'admin') redirect('/admin')
   if (profile?.role === 'customer') redirect('/portal')
 
   return (
     <div className="min-h-dvh bg-[var(--color-background)]">
-      {/* Top nav */}
       <header className="bg-[var(--color-primary)] text-white">
         <nav className="container-custom flex items-center justify-between h-16">
           <Link href="/silage-portal" className="flex items-center gap-2.5">

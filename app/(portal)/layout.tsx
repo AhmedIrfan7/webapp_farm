@@ -1,21 +1,24 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { PortalSidebar } from '@/components/layout/PortalSidebar'
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
+  // Step 1: verify identity via anon client (validates JWT properly)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) redirect('/auth/login?redirect=/portal')
 
-  const { data: profile } = await supabase
+  // Step 2: read profile via service client (bypasses RLS — no cookie interference)
+  const db = createServiceClient()
+  const { data: profile } = await db
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
 
-  // Admin gets redirected to admin panel, not customer portal
+  // Redirect to the correct portal based on actual DB role
   if (profile?.role === 'admin') redirect('/admin')
+  if (profile?.role === 'farm') redirect('/silage-portal')
 
   return (
     <div className="flex min-h-dvh bg-[var(--color-background)]">

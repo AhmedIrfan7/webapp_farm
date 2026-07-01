@@ -1,14 +1,16 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { AdminSidebar } from '@/components/layout/AdminSidebar'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Step 1: verify identity via anon client (validates JWT properly)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) redirect('/auth/login?redirect=/admin')
 
-  const { data: profile } = await supabase
+  // Step 2: read profile via service client (bypasses RLS — no cookie interference)
+  const db = createServiceClient()
+  const { data: profile } = await db
     .from('profiles')
     .select('role, full_name')
     .eq('id', user.id)

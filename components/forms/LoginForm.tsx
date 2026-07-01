@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -15,7 +14,6 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
-  const router = useRouter()
 
   function validate() {
     const errs: typeof fieldErrors = {}
@@ -53,10 +51,7 @@ export function LoginForm() {
           error.message.includes('email_not_confirmed')
         ) {
           setFormError('Your email is not confirmed. Please check your inbox for the confirmation link.')
-        } else if (
-          error.message.includes('Too many requests') ||
-          error.status === 429
-        ) {
+        } else if (error.message.includes('Too many requests') || error.status === 429) {
           setFormError('Too many login attempts. Please wait a few minutes and try again.')
         } else if (error.message.includes('User not found')) {
           setFormError('No account found with this email address.')
@@ -73,26 +68,18 @@ export function LoginForm() {
         return
       }
 
-      // Fetch role via server API (uses service role key, bypasses RLS)
-      const res = await fetch('/api/me/role')
-      const json = await res.json()
-
-      if (!res.ok) {
-        await supabase.auth.signOut()
-        const hint = json?.userId ? ` (user: ${json.userId})` : ''
-        setFormError(`Account setup is incomplete${hint}. Please contact support.`)
-        setLoading(false)
-        return
-      }
-      const { role } = json
-
       toast.success('Welcome back!')
+
+      // Role is embedded in the JWT via user_metadata set at signup / admin SQL update.
+      // Layouts re-verify the actual DB role server-side, so this is safe for routing only.
+      const role = data.user.user_metadata?.role as string | undefined
 
       if (role === 'admin') {
         window.location.href = '/admin'
       } else if (role === 'farm') {
         window.location.href = '/silage-portal'
       } else {
+        // Fallback: /portal layout will redirect admin/farm to the correct portal
         window.location.href = '/portal'
       }
 
@@ -118,12 +105,8 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
 
-      {/* Form-level error banner */}
       {formError && (
-        <div
-          role="alert"
-          className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700"
-        >
+        <div role="alert" className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700">
           <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -158,10 +141,7 @@ export function LoginForm() {
           rightIconLabel={showPassword ? 'Hide password' : 'Show password'}
         />
         <div className="mt-2 text-right">
-          <Link
-            href="/auth/forgot-password"
-            className="text-xs text-[var(--color-primary)] hover:underline font-medium"
-          >
+          <Link href="/auth/forgot-password" className="text-xs text-[var(--color-primary)] hover:underline font-medium">
             Forgot password?
           </Link>
         </div>
