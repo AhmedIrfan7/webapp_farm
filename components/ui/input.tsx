@@ -10,10 +10,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
   onRightIconClick?: () => void
+  rightIconLabel?: string
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helper, leftIcon, rightIcon, onRightIconClick, className, id, ...props }, ref) => {
+  ({ label, error, helper, leftIcon, rightIcon, onRightIconClick, rightIconLabel, className, id, ...props }, ref) => {
     const inputId = id || React.useId()
 
     return (
@@ -56,7 +57,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             <button
               type="button"
               onClick={onRightIconClick}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+              aria-label={rightIconLabel}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus:outline-none focus:text-[var(--color-primary)]"
             >
               {rightIcon}
             </button>
