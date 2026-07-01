@@ -74,18 +74,25 @@ export function LoginForm() {
       }
 
       // Fetch role to redirect correctly
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
         .single()
 
+      if (profileError || !profile) {
+        // Profile missing — sign out and show error
+        await supabase.auth.signOut()
+        setFormError('Account setup is incomplete. Please contact support or try registering again.')
+        setLoading(false)
+        return
+      }
+
       toast.success('Welcome back!')
 
-      const role = profile?.role
-      if (role === 'admin') {
+      if (profile.role === 'admin') {
         window.location.href = '/admin'
-      } else if (role === 'farm') {
+      } else if (profile.role === 'farm') {
         window.location.href = '/silage-portal'
       } else {
         window.location.href = '/portal'
