@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { Suspense } from 'react'
 import { RegisterForm } from '@/components/forms/RegisterForm'
 import Link from 'next/link'
 
@@ -16,7 +17,9 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      <RegisterForm />
+      <Suspense fallback={<div className="h-96 flex items-center justify-center text-[var(--color-text-muted)] text-sm">Loading form...</div>}>
+        <RegisterForm />
+      </Suspense>
 
       <div className="mt-6 text-center">
         <p className="text-sm text-[var(--color-text-secondary)]">
