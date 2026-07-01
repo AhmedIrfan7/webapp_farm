@@ -36,6 +36,18 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+-- Helper: security definer so it runs as postgres (bypasses RLS), preventing
+-- infinite recursion when policies on other tables check the profiles table.
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+$$;
+
 -- RLS policies for profiles
 create policy "Users can view own profile"
   on profiles for select using (auth.uid() = id);
@@ -44,12 +56,10 @@ create policy "Users can update own profile"
   on profiles for update using (auth.uid() = id);
 
 create policy "Admins can view all profiles"
-  on profiles for select
-  using (exists (select 1 from profiles where id = auth.uid() and role = 'admin'));
+  on profiles for select using (public.is_admin());
 
 create policy "Admins can update all profiles"
-  on profiles for update
-  using (exists (select 1 from profiles where id = auth.uid() and role = 'admin'));
+  on profiles for update using (public.is_admin());
 
 -- ─── PRODUCTS ────────────────────────────────────────────────────────────────
 create table if not exists public.products (
@@ -73,7 +83,7 @@ create policy "Anyone can view available products"
 
 create policy "Admins can manage products"
   on products for all
-  using (exists (select 1 from profiles where id = auth.uid() and role = 'admin'));
+  using (public.is_admin());
 
 -- Updated_at trigger
 create or replace function public.set_updated_at()
@@ -105,7 +115,7 @@ create policy "Anyone can view available silage products"
 
 create policy "Admins can manage silage products"
   on silage_products for all
-  using (exists (select 1 from profiles where id = auth.uid() and role = 'admin'));
+  using (public.is_admin());
 
 -- ─── ORDERS ──────────────────────────────────────────────────────────────────
 create table if not exists public.orders (
@@ -136,7 +146,7 @@ create policy "Users can create orders"
 
 create policy "Admins can manage all orders"
   on orders for all
-  using (exists (select 1 from profiles where id = auth.uid() and role = 'admin'));
+  using (public.is_admin());
 
 create trigger orders_updated_at before update on orders
   for each row execute procedure set_updated_at();
@@ -163,7 +173,7 @@ create policy "Users can insert own order items"
 
 create policy "Admins can manage all order items"
   on order_items for all
-  using (exists (select 1 from profiles where id = auth.uid() and role = 'admin'));
+  using (public.is_admin());
 
 -- ─── SILAGE ORDERS ───────────────────────────────────────────────────────────
 create table if not exists public.silage_orders (
@@ -198,7 +208,7 @@ create policy "Anyone can submit silage inquiry"
 
 create policy "Admins can manage all silage orders"
   on silage_orders for all
-  using (exists (select 1 from profiles where id = auth.uid() and role = 'admin'));
+  using (public.is_admin());
 
 create trigger silage_orders_updated_at before update on silage_orders
   for each row execute procedure set_updated_at();
@@ -236,7 +246,7 @@ create policy "Anyone can view visible testimonials"
 
 create policy "Admins can manage testimonials"
   on testimonials for all
-  using (exists (select 1 from profiles where id = auth.uid() and role = 'admin'));
+  using (public.is_admin());
 
 -- ─── SEED: Default Admin ─────────────────────────────────────────────────────
 -- NOTE: Create the admin user via Supabase Auth dashboard first,
