@@ -75,13 +75,16 @@ export function LoginForm() {
 
       // Fetch role via server API (uses service role key, bypasses RLS)
       const res = await fetch('/api/me/role')
+      const json = await res.json()
+
       if (!res.ok) {
         await supabase.auth.signOut()
-        setFormError('Account setup is incomplete. Please contact support or try registering again.')
+        const hint = json?.userId ? ` (user: ${json.userId})` : ''
+        setFormError(`Account setup is incomplete${hint}. Please contact support.`)
         setLoading(false)
         return
       }
-      const { role } = await res.json()
+      const { role } = json
 
       toast.success('Welcome back!')
 
