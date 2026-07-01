@@ -45,8 +45,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect authenticated users away from auth pages
+  // /portal layout auto-redirects admins to /admin, farms to /silage-portal
   const authRoutes = ['/auth/login', '/auth/register']
   if (authRoutes.includes(pathname) && user) {
+    const redirectTo = request.nextUrl.searchParams.get('redirect')
+    if (redirectTo && redirectTo.startsWith('/')) {
+      return NextResponse.redirect(new URL(redirectTo, request.url))
+    }
     return NextResponse.redirect(new URL('/portal', request.url))
   }
 
